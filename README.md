@@ -14,7 +14,7 @@ Both C++ and blueprints are supported. For convenience, queries can be construct
 
 The current version was built with Unreal Engine version 4.13.
 
-Win32 is currently supported and tested. Mac and Linux should work as well but requires compiling the MySQL binaries and editing the build script so that the compiler can find the correct libraries to link to. Contributions on this would be much appreciated.
+Win32 and Win64 platforms are currently supported and tested. Mac and Linux should work as well but requires compiling the MySQL binaries and editing the build script so that the compiler can find the correct libraries to link to. Contributions on this would be much appreciated.
 
 ## Documentation
 https://github.com/KhArtNJava/MySQLConnectorUE4Plugin/wiki
