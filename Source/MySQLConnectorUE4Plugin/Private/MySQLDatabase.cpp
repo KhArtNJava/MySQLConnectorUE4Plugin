@@ -144,7 +144,7 @@ FMySQLConnectorTable UMySQLDatabase::CreateTable(const FString TableName,
 	//UE_LOG(LogMySQL_Database, Error, TEXT("2!!!%s!!!"), *query);
 
 	//UE_LOG(LogMySQL_Database2, Warning, TEXT("Your message"));
-	UE_LOG(LogMySQL_Database, Warning, TEXT("!!!%s"), *query);
+	//UE_LOG(LogMySQL_Database, Warning, TEXT("!!!%s"), *query);
 	//LogMySQL_Database2(Warning, *query);
 
 	//GEngine->AddOnScreenDebugMessage(-1, 3, FColor::Cyan, TEXT("MySQLConnector: ") + query);
@@ -220,4 +220,135 @@ FMySQLConnectorTableField UMySQLDatabase::MySQLConnectorVARCHAR(const FString Fi
 	//GEngine->AddOnScreenDebugMessage(-1, 3, FColor::Cyan, TEXT("!!!") + f.ResultStr+ TEXT("!!!"));/
 
 	return f;
+}
+
+bool UMySQLDatabase::MySQLConnectorInsertTest(const FString Query, UMySQLConnection* Connection) {
+	RunQueryAndGetResults(Query, Connection);
+	//	RunQueryAndGetResults(TEXT("select id, FName from t2"), Connection);
+	return true;
+}
+
+#pragma warning(push)
+#pragma warning( disable : 4706 )
+MySQLConnectorQueryResult UMySQLDatabase::RunQueryAndGetResults(FString Query, UMySQLConnection* Connection)
+{
+	MySQLConnectorQueryResult resultOutput;
+
+	//////////////////////////////////////////////////////////////////////////
+	// Get and assign the data
+	//////////////////////////////////////////////////////////////////////////
+
+	std::string MyStdString(TCHAR_TO_UTF8(*Query));
+
+	if (mysql_query(&Connection->globalCon, MyStdString.c_str())) // "SELECT * FROM Cars"
+	{
+		//finish_with_error(con);
+	}
+
+	MYSQL_RES *result = mysql_store_result(&Connection->globalCon);
+
+	if (result == NULL)
+	{
+		//finish_with_error(con);
+	}
+
+	int num_fields = mysql_num_fields(result);
+
+	TArray<int> fieldTypes;
+	TArray<FString> fieldNames;
+
+	MYSQL_FIELD *fields;
+	fields = mysql_fetch_fields(result);
+	for (int i = 0; i < num_fields; i++)
+	{
+		FString NewString = FString::FromInt(fields[i].type);
+		//GEngine->AddOnScreenDebugMessage(-1, 3, FColor::Cyan, TEXT("MySQLConnector: Type is:") + NewString);
+
+		fieldTypes.Add(fields[i].type);
+		fieldNames.Add(UTF8_TO_TCHAR(fields[i].name));
+	}
+
+	//////////////////////////////////////////////////////////////////////////
+	// Get and assign the data
+	//////////////////////////////////////////////////////////////////////////
+
+	TArray<MySQLConnectorResultValue> resultRows;
+
+	MYSQL_ROW row;
+	while ((row = mysql_fetch_row(result)))
+	{
+
+		MySQLConnectorResultValue rowVal;
+
+		for (int i = 0; i < num_fields; i++)
+		{
+			MySQLConnectorResultField val;
+
+            FString columnNameStr = fieldNames[i];
+            val.Name = columnNameStr;
+
+			FString fieldValueStr = (UTF8_TO_TCHAR(row[i]));
+
+			switch (fieldTypes[i]) {
+			case enum_field_types::MYSQL_TYPE_LONG:
+				//GEngine->AddOnScreenDebugMessage(-1, 3, FColor::Cyan, TEXT("MySQLConnector: Type is: MYSQL_TYPE_LONG "));
+				//GEngine->AddOnScreenDebugMessage(-1, 3, FColor::Cyan, TEXT("VALUE is '") + fieldValueStr + TEXT("' "));
+				val.Type = MySQLConnectorResultValueTypes::Int;
+				val.IntValue = FCString::Atoi(*fieldValueStr);
+				break;
+			case enum_field_types::MYSQL_TYPE_VAR_STRING:
+				//GEngine->AddOnScreenDebugMessage(-1, 3, FColor::Cyan, TEXT("MySQLConnector: Type is: MYSQL_TYPE_VAR_STRING"));
+				//GEngine->AddOnScreenDebugMessage(-1, 3, FColor::Cyan, TEXT("VALUE is '") + fieldValueStr + TEXT("' "));
+				val.Type = MySQLConnectorResultValueTypes::Varchar;
+				val.StringValue = fieldValueStr;
+				break;
+			default:
+				/*GEngine->AddOnScreenDebugMessage(-1, 3, FColor::Cyan, TEXT("MySQLConnector: Type is: UNKNOWN"));
+				GEngine->AddOnScreenDebugMessage(-1, 3, FColor::Cyan, TEXT("VALUE is '") + fieldValueStr + TEXT("' "));*/
+				val.Type = MySQLConnectorResultValueTypes::UnsupportedValueType;
+				val.IntValue = FCString::Atoi(*fieldValueStr);
+			}
+
+            rowVal.Fields.Add(val);
+		}
+
+		resultRows.Add(rowVal);
+	}
+
+	mysql_free_result(result);
+
+	resultOutput.Results = resultRows;
+	resultOutput.Success = true;
+	return resultOutput;
+
+}
+
+FMySQLConnectoreQueryResult UMySQLDatabase::MySQLConnectorGetData( const FString& Query, UMySQLConnection* Connection)
+{
+	FMySQLConnectoreQueryResult result;
+
+	//////////////////////////////////////////////////////////////////////////
+	// Get the results
+	//////////////////////////////////////////////////////////////////////////
+
+	MySQLConnectorQueryResult queryResult = RunQueryAndGetResults(Query, Connection);
+	result.Success = queryResult.Success;
+	result.ErrorMessage = queryResult.ErrorMessage;
+
+	for (auto row : queryResult.Results)
+	{
+		FMySQLConnectorQueryResultRow outRow;
+		for (auto field : row.Fields)
+		{
+			FMySQLConnectorKeyValuePair outField;
+			outField.Key = field.Name;
+			outField.Value = field.ToString();
+
+			outRow.Fields.Add(outField);
+		}
+		result.ResultRows.Add(outRow);
+	}
+
+	return result;
+
 }
