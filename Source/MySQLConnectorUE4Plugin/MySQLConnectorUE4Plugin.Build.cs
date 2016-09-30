@@ -6,8 +6,6 @@ public class MySQLConnectorUE4Plugin : ModuleRules
     public MySQLConnectorUE4Plugin(TargetInfo Target)
     {
         UEBuildConfiguration.bForceEnableExceptions = true;
-        FileReference CheckProjectFile;
-        UProjectInfo.TryGetProjectForTarget("MyGame", out CheckProjectFile);
 		
         string ModulePath = this.ModuleDirectory;
         string ThirdPartyPath = Path.GetFullPath( Path.Combine( ModulePath, "../../ThirdParty/" ) );
