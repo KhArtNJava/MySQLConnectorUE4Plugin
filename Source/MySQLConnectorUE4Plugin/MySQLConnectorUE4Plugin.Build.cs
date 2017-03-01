@@ -5,27 +5,21 @@ public class MySQLConnectorUE4Plugin : ModuleRules
 {
     public MySQLConnectorUE4Plugin(TargetInfo Target)
     {
-        //File.WriteAllText("c:/temp/qqq.txt", this.GetType().Name);
-        //string ModulePath = Path.GetDirectoryName( RulesAssembly.GetModuleFilename( this.GetType().Name ) );
-
         UEBuildConfiguration.bForceEnableExceptions = true;
-
-        RulesAssembly r;
-		FileReference CheckProjectFile;
-		UProjectInfo.TryGetProjectForTarget("MyGame", out CheckProjectFile);
 		
-		r = RulesCompiler.CreateProjectRulesAssembly(CheckProjectFile);
-		FileReference f = r.GetModuleFileName( this.GetType().Name );
-		//File.WriteAllText("c:/temp/qqq2.txt", f.CanonicalName );
-		
-        string ModulePath = Path.GetDirectoryName( f.CanonicalName );
-        string PlatformString = (Target.Platform == UnrealTargetPlatform.Win64) ? "x64" : "x86";
+        string ModulePath = this.ModuleDirectory;
         string ThirdPartyPath = Path.GetFullPath( Path.Combine( ModulePath, "../../ThirdParty/" ) );
-       
-	    string LibrariesPath = Path.Combine(ThirdPartyPath, "MySQLConnector", "Lib");
+        string LibrariesPath = Path.Combine(ThirdPartyPath, "MySQLConnector", "Lib");
 
-        string LibraryName = Path.Combine(LibrariesPath, "mariadbclient." + PlatformString + ".lib");
-        PublicAdditionalLibraries.Add(LibraryName);
+        if (Target.Platform == UnrealTargetPlatform.Win64 || Target.Platform == UnrealTargetPlatform.Win32) {
+            string PlatformString = (Target.Platform == UnrealTargetPlatform.Win64) ? "x64" : "x86";
+            string LibraryName = Path.Combine(LibrariesPath, "mariadbclient." + PlatformString + ".lib");
+            PublicAdditionalLibraries.Add(LibraryName);
+        } else if (Target.Platform == UnrealTargetPlatform.Linux) {
+            string LibraryName = Path.Combine(LibrariesPath, "libmariadbclient.a");
+            PublicAdditionalLibraries.Add(LibraryName);
+        }
+
 
         PrivateIncludePaths.AddRange(new string[] { "MySQLConnectorUE4Plugin/Private" });
         PublicIncludePaths.AddRange(new string[] { "MySQLConnectorUE4Plugin/Public" });
