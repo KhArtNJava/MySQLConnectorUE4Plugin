@@ -65,6 +65,12 @@ bool UMySQLDatabase::MySQLConnectorExecuteQuery(FString Query, UMySQLConnection*
 		qwe = qwe + TEXT("');");*/
 
 
+	if (!Connection)
+	{
+		UE_LOG(LogTemp, Error, TEXT("Connection is NULL!"));
+		return false;
+	};
+
 	std::string MyStdString(TCHAR_TO_UTF8(*Query));
 
 	//if (mysql_query(con, "INSERT INTO `test`.`t1` (`Qwe`) VALUES ('Привет ');")) {
@@ -78,6 +84,12 @@ bool UMySQLDatabase::MySQLConnectorExecuteQuery(FString Query, UMySQLConnection*
 
 bool UMySQLDatabase::DropTable(const FString TableName, UMySQLConnection* Connection)
 {
+	if (!Connection)
+	{
+		UE_LOG(LogTemp, Error, TEXT("Connection is NULL!"));
+		return false;
+	};
+
 	bool idxCrSts = true;
 
 	FString Query = "DROP TABLE " + TableName;
@@ -90,6 +102,12 @@ bool UMySQLDatabase::DropTable(const FString TableName, UMySQLConnection* Connec
 
 bool UMySQLDatabase::TruncateTable(const FString TableName, UMySQLConnection* Connection)
 {
+	if (!Connection)
+	{
+		UE_LOG(LogTemp, Error, TEXT("Connection is NULL!"));
+		return false;
+	};
+
 	bool idxCrSts = true;
 
 
@@ -114,6 +132,13 @@ FMySQLConnectorTable UMySQLDatabase::CreateTable(const FString TableName,
 		PRIMARY KEY(`id`));*/
 
 	FMySQLConnectorTable t;
+
+	if (!Connection || !Connection->MySQLCheckConnection())
+	{
+		UE_LOG(LogTemp, Error, TEXT("Not connected or Connection is NULL!"));
+		return t;
+	};
+
 	t.DatabaseName = TEXT("");
 	t.TableName = TableName;
 	t.Fields = Fields;
@@ -233,6 +258,11 @@ bool UMySQLDatabase::MySQLConnectorInsertTest(const FString Query, UMySQLConnect
 MySQLConnectorQueryResult UMySQLDatabase::RunQueryAndGetResults(FString Query, UMySQLConnection* Connection)
 {
 	MySQLConnectorQueryResult resultOutput;
+	if (!Connection || !Connection->MySQLCheckConnection())
+	{
+		UE_LOG(LogTemp, Error, TEXT("Not connected or Connection is NULL!"));
+		return resultOutput;
+	};
 
 	//////////////////////////////////////////////////////////////////////////
 	// Get and assign the data
@@ -284,8 +314,8 @@ MySQLConnectorQueryResult UMySQLDatabase::RunQueryAndGetResults(FString Query, U
 		{
 			MySQLConnectorResultField val;
 
-            FString columnNameStr = fieldNames[i];
-            val.Name = columnNameStr;
+			FString columnNameStr = fieldNames[i];
+			val.Name = columnNameStr;
 
 			FString fieldValueStr = (UTF8_TO_TCHAR(row[i]));
 
@@ -309,7 +339,7 @@ MySQLConnectorQueryResult UMySQLDatabase::RunQueryAndGetResults(FString Query, U
 				val.IntValue = FCString::Atoi(*fieldValueStr);
 			}
 
-            rowVal.Fields.Add(val);
+			rowVal.Fields.Add(val);
 		}
 
 		resultRows.Add(rowVal);
@@ -323,13 +353,18 @@ MySQLConnectorQueryResult UMySQLDatabase::RunQueryAndGetResults(FString Query, U
 
 }
 
-FMySQLConnectoreQueryResult UMySQLDatabase::MySQLConnectorGetData( const FString& Query, UMySQLConnection* Connection)
+FMySQLConnectoreQueryResult UMySQLDatabase::MySQLConnectorGetData(const FString& Query, UMySQLConnection* Connection)
 {
 	FMySQLConnectoreQueryResult result;
 
 	//////////////////////////////////////////////////////////////////////////
 	// Get the results
 	//////////////////////////////////////////////////////////////////////////
+	if (!Connection || !Connection->MySQLCheckConnection())
+	{
+		UE_LOG(LogTemp, Error, TEXT("Not connected or Connection is NULL!"));
+		return result;
+	}
 
 	MySQLConnectorQueryResult queryResult = RunQueryAndGetResults(Query, Connection);
 	result.Success = queryResult.Success;
@@ -348,6 +383,7 @@ FMySQLConnectoreQueryResult UMySQLDatabase::MySQLConnectorGetData( const FString
 		}
 		result.ResultRows.Add(outRow);
 	}
+
 
 	return result;
 
