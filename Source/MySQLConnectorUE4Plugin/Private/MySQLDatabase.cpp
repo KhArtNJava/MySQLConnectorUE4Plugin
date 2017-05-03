@@ -261,6 +261,8 @@ MySQLConnectorQueryResult UMySQLDatabase::RunQueryAndGetResults(FString Query, U
 	if (!Connection || !Connection->MySQLCheckConnection())
 	{
 		UE_LOG(LogTemp, Error, TEXT("Not connected or Connection is NULL!"));
+		resultOutput.ErrorMessage = "Not connected or Connection is NULL!";
+		resultOutput.Success = false;
 		return resultOutput;
 	};
 
@@ -277,9 +279,13 @@ MySQLConnectorQueryResult UMySQLDatabase::RunQueryAndGetResults(FString Query, U
 
 	MYSQL_RES *result = mysql_store_result(&Connection->globalCon);
 
-	if (result == NULL)
+	if (!result)
 	{
-		//finish_with_error(con);
+		//finish_with_error(con);		
+			UE_LOG(LogTemp, Error, TEXT("Result is NULL!"));
+			resultOutput.ErrorMessage = "Result is NULL!";
+			resultOutput.Success = false;
+			return resultOutput;	
 	}
 
 	int num_fields = mysql_num_fields(result);
@@ -363,6 +369,8 @@ FMySQLConnectoreQueryResult UMySQLDatabase::MySQLConnectorGetData(const FString&
 	if (!Connection || !Connection->MySQLCheckConnection())
 	{
 		UE_LOG(LogTemp, Error, TEXT("Not connected or Connection is NULL!"));
+		result.ErrorMessage = "Not connected or Connection is NULL!";
+		result.Success = false;
 		return result;
 	}
 
