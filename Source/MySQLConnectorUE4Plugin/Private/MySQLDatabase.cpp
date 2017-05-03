@@ -343,6 +343,7 @@ MySQLConnectorQueryResult UMySQLDatabase::RunQueryAndGetResults(FString Query, U
 				GEngine->AddOnScreenDebugMessage(-1, 3, FColor::Cyan, TEXT("VALUE is '") + fieldValueStr + TEXT("' "));*/
 				val.Type = MySQLConnectorResultValueTypes::UnsupportedValueType;
 				val.IntValue = FCString::Atoi(*fieldValueStr);
+				val.StringValue = fieldValueStr;
 			}
 
 			rowVal.Fields.Add(val);

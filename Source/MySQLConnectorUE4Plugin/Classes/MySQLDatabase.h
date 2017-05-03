@@ -89,9 +89,8 @@ struct MySQLConnectorResultField
 	{
 		if (Type == MySQLConnectorResultValueTypes::Varchar)
 			return StringValue;
-		else if (Type == MySQLConnectorResultValueTypes::Int)
+		if (Type == MySQLConnectorResultValueTypes::Int)
 			return FString::Printf(TEXT("%i"), IntValue);
-
 		return StringValue;
 	}
 };
