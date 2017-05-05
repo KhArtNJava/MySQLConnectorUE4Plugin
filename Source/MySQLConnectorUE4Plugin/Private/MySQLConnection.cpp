@@ -25,3 +25,13 @@ if (!isConnected) {
 
 
 }
+
+bool UMySQLConnection::MySQLCloseConnection(UMySQLConnection* Connection)
+{
+	if (Connection) {
+		mysql_close(&Connection->globalCon);
+		Connection->isConnected = mysql_ping(&Connection->globalCon) == 0;
+		return !Connection->isConnected;
+	}
+	return false;
+}

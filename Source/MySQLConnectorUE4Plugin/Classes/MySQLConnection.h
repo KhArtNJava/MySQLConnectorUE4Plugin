@@ -20,4 +20,7 @@ public:
     UFUNCTION(BlueprintCallable, Category = "MySQLConnector|Connection")
 		bool MySQLCheckConnection();
 
+	// closes the connection, returns true if there was a connection and it was successfully closed, false otherwise
+	UFUNCTION(BlueprintCallable, Category = "MySQLConnector|Connection")
+	static bool MySQLCloseConnection(UMySQLConnection* Connection);
 };
