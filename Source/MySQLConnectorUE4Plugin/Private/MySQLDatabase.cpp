@@ -258,10 +258,18 @@ bool UMySQLDatabase::MySQLConnectorInsertTest(const FString Query, UMySQLConnect
 MySQLConnectorQueryResult UMySQLDatabase::RunQueryAndGetResults(FString Query, UMySQLConnection* Connection)
 {
 	MySQLConnectorQueryResult resultOutput;
-	if (!Connection || !Connection->MySQLCheckConnection())
+	if (!Connection)
 	{
-		UE_LOG(LogTemp, Error, TEXT("Not connected or Connection is NULL!"));
-		resultOutput.ErrorMessage = "Not connected or Connection is NULL!";
+		UE_LOG(LogTemp, Error, TEXT("Connection is NULL!"));
+		resultOutput.ErrorMessage = "Connection is NULL!";
+		resultOutput.Success = false;
+		return resultOutput;
+	};
+
+	if (!Connection->MySQLCheckConnection())
+	{
+		UE_LOG(LogTemp, Error, TEXT("Not connected!"));
+		resultOutput.ErrorMessage = "Not connected!";
 		resultOutput.Success = false;
 		return resultOutput;
 	};
@@ -295,13 +303,15 @@ MySQLConnectorQueryResult UMySQLDatabase::RunQueryAndGetResults(FString Query, U
 
 	MYSQL_FIELD *fields;
 	fields = mysql_fetch_fields(result);
-	for (int i = 0; i < num_fields; i++)
-	{
-		FString NewString = FString::FromInt(fields[i].type);
-		//GEngine->AddOnScreenDebugMessage(-1, 3, FColor::Cyan, TEXT("MySQLConnector: Type is:") + NewString);
+	if (fields) {
+		for (int i = 0; i < num_fields; i++)
+		{
+			FString NewString = FString::FromInt(fields[i].type);
+			//GEngine->AddOnScreenDebugMessage(-1, 3, FColor::Cyan, TEXT("MySQLConnector: Type is:") + NewString);
 
-		fieldTypes.Add(fields[i].type);
-		fieldNames.Add(UTF8_TO_TCHAR(fields[i].name));
+			fieldTypes.Add(fields[i].type);
+			fieldNames.Add(UTF8_TO_TCHAR(fields[i].name));
+		}
 	}
 
 	//////////////////////////////////////////////////////////////////////////
