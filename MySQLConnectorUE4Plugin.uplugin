@@ -3,19 +3,17 @@
     "FriendlyName" : "MySQLConnectorUE4 Plugin",
     "Version" : 1,
     "VersionName": "1.0",
-    "EngineVersion" : 1579795,
     "Description" : "Exposing MySQLConnector functionality to UE4",
     "Category" : "Database",
     "CreatedBy" : "Arthur Khusnutdinov",
     "CreatedByURL" : "http://lifesim.biz",
-    "CanContainContent" : "false",
+    "CanContainContent" : "true",
     "Modules" :
     [
         {
             "Name" : "MySQLConnectorUE4Plugin",
             "Type" : "Runtime",
-			"LoadingPhase" : "PreDefault"
-
+			"LoadingPhase" : "Default"
         } 
     ]
 }

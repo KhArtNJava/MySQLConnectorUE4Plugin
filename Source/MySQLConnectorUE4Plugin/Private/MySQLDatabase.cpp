@@ -1,5 +1,5 @@
+#include "MySQLDatabase.h"
 #include "MySQLConnectorUE4Plugin.h"
-#include "../Classes/MySQLDatabase.h"
 #include <string>
 #include "Engine.h"
 
@@ -16,29 +16,30 @@ UMySQLConnection* UMySQLDatabase::MySQLInitConnection(FString Host, FString User
 	std::string DatabaseNameString(TCHAR_TO_UTF8(*DatabaseName));
 
 	UMySQLConnection* cs = NewObject< UMySQLConnection >();
-
-	if (mysql_library_init(0, NULL, NULL)) {
+	
+	if (mysql_library_init(0, nullptr, nullptr) != 0) {
+		UE_LOG(LogTemp, Error, TEXT("%s: FAILED TO INIT mysql library"), __FUNCTION__);
 		GEngine->AddOnScreenDebugMessage(-1, 3, FColor::Cyan, TEXT("FAILED TO INIT mysql library"));
-		cs->isConnected = false;
 	}
-	else {
+	else {	
 
-		MYSQL *con = mysql_init(NULL);
+		cs->globalCon = mysql_init(nullptr);
 
 		//printf("MySQL client version: %s\n", mysql_get_client_info());
 
-		if (mysql_real_connect(con,
+		if (!mysql_real_connect(cs->globalCon,
 			HostString.c_str(),
 			UserNameString.c_str(),
 			UserPasswordString.c_str(),
 			DatabaseNameString.c_str(),
-			0, NULL, 0) == NULL)
+			0, nullptr, 0))
 		{
-			cs->isConnected = false;
+			UE_LOG(LogTemp, Error, TEXT("%s: Failed to Connect to Database!"), __FUNCTION__);
+			delete cs->globalCon;
+			cs->globalCon = nullptr;
 		}
 		else {
-
-			if (!mysql_set_character_set(con, "utf8"))
+			if (!mysql_set_character_set(cs->globalCon, "utf8"))
 			{
 				//printf("New client character set: %s\n",
 				//		mysql_character_set_name(con));
@@ -46,11 +47,9 @@ UMySQLConnection* UMySQLDatabase::MySQLInitConnection(FString Host, FString User
 			}
 			else {
 				GEngine->AddOnScreenDebugMessage(-1, 3, FColor::Cyan, TEXT("MySQLConnector: Can't set UTF-8 with mysql_set_character_set"));
+				UE_LOG(LogTemp, Error, TEXT("%s: Can't set UTF-8 with mysql_set_character_set"), __FUNCTION__);
 			}
-
-			cs->globalCon = *con;
-			cs->isConnected = true;
-		}
+		}		
 	}
 
 	return cs;
@@ -65,7 +64,7 @@ bool UMySQLDatabase::MySQLConnectorExecuteQuery(FString Query, UMySQLConnection*
 		qwe = qwe + TEXT("');");*/
 
 
-	if (!Connection)
+	if (!Connection || !Connection->globalCon)
 	{
 		UE_LOG(LogTemp, Error, TEXT("Connection is NULL!"));
 		return false;
@@ -74,10 +73,9 @@ bool UMySQLDatabase::MySQLConnectorExecuteQuery(FString Query, UMySQLConnection*
 	std::string MyStdString(TCHAR_TO_UTF8(*Query));
 
 	//if (mysql_query(con, "INSERT INTO `test`.`t1` (`Qwe`) VALUES ('Привет ');")) {
-	if (mysql_query(&Connection->globalCon, MyStdString.c_str())) {
+	if (mysql_query(Connection->globalCon, MyStdString.c_str())) {
 		return false;
 	}
-
 	return true;
 
 }
@@ -280,20 +278,20 @@ MySQLConnectorQueryResult UMySQLDatabase::RunQueryAndGetResults(FString Query, U
 
 	std::string MyStdString(TCHAR_TO_UTF8(*Query));
 
-	if (mysql_query(&Connection->globalCon, MyStdString.c_str())) // "SELECT * FROM Cars"
+	if (mysql_query(Connection->globalCon, MyStdString.c_str())) // "SELECT * FROM Cars"
 	{
 		//finish_with_error(con);
 	}
 
-	MYSQL_RES *result = mysql_store_result(&Connection->globalCon);
+	MYSQL_RES *result = mysql_store_result(Connection->globalCon);
 
 	if (!result)
 	{
 		//finish_with_error(con);		
-			UE_LOG(LogTemp, Error, TEXT("Result is NULL!"));
-			resultOutput.ErrorMessage = "Result is NULL!";
-			resultOutput.Success = false;
-			return resultOutput;	
+		UE_LOG(LogTemp, Error, TEXT("Result is NULL!"));
+		resultOutput.ErrorMessage = "Result is NULL!";
+		resultOutput.Success = false;
+		return resultOutput;
 	}
 
 	int num_fields = mysql_num_fields(result);
