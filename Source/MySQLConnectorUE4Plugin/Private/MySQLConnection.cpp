@@ -22,17 +22,17 @@ bool UMySQLConnection::MySQLCloseConnection(UMySQLConnection* Connection)
 		if (Connection->MySQLCheckConnection())
 		{
 			mysql_close(Connection->globalCon);
-			//free(Connection->globalCon);
 			Connection->globalCon = nullptr;
 			mysql_library_end();
+			UE_LOG(LogTemp, Log, TEXT("MySQLCloseConnection: Connection to DB closed in %s."));
 			return true;
 		}else
 		{
-			UE_LOG(LogTemp, Error, TEXT("%s: Connection is valid but Server does no respond!"), __FUNCTION__);
+			UE_LOG(LogTemp, Error, TEXT("MySQLCloseConnection: Connection is valid but Server does no respond!"));
 		}
 	} else
 	{
-		UE_LOG(LogTemp, Error, TEXT("%s: Connection is null!"), __FUNCTION__);
+		UE_LOG(LogTemp, Error, TEXT("MySQLCloseConnection: Connection is null!"));
 	}
 	return false;
 }

@@ -8,48 +8,49 @@ UMySQLDatabase::UMySQLDatabase(const FObjectInitializer& ObjectInitializer)
 {
 }
 
-UMySQLConnection* UMySQLDatabase::MySQLInitConnection(FString Host, FString UserName, FString UserPassword, FString DatabaseName) {
-
+UMySQLConnection* UMySQLDatabase::MySQLInitConnection(FString Host, FString UserName, FString UserPassword, FString DatabaseName)
+{
 	std::string HostString(TCHAR_TO_UTF8(*Host));
 	std::string UserNameString(TCHAR_TO_UTF8(*UserName));
 	std::string UserPasswordString(TCHAR_TO_UTF8(*UserPassword));
 	std::string DatabaseNameString(TCHAR_TO_UTF8(*DatabaseName));
 
-	UMySQLConnection* cs = NewObject< UMySQLConnection >();
-	
-	if (mysql_library_init(0, nullptr, nullptr) != 0) {
-		UE_LOG(LogTemp, Error, TEXT("%s: FAILED TO INIT mysql library"), __FUNCTION__);
+	UMySQLConnection* cs = NewObject<UMySQLConnection>();
+
+	if (mysql_library_init(0, nullptr, nullptr) != 0)
+	{
+		UE_LOG(LogTemp, Error, TEXT("MySQLInitConnection: FAILED TO INIT mysql library"));
 		GEngine->AddOnScreenDebugMessage(-1, 3, FColor::Cyan, TEXT("FAILED TO INIT mysql library"));
+		mysql_library_end();
+		return nullptr;
 	}
-	else {	
 
-		cs->globalCon = mysql_init(nullptr);
+	cs->globalCon = mysql_init(nullptr);
+	if (!cs->globalCon)
+	{
+		UE_LOG(LogTemp, Error, TEXT("MySQLInitConnection: FAILED TO INIT connection"));
+		mysql_library_end();
+		return nullptr;
+	}
 
-		//printf("MySQL client version: %s\n", mysql_get_client_info());
+	if (!mysql_real_connect(cs->globalCon,
+	                        HostString.c_str(),
+	                        UserNameString.c_str(),
+	                        UserPasswordString.c_str(),
+	                        DatabaseNameString.c_str(),
+	                        0, nullptr, 0))
+	{
+		UE_LOG(LogTemp, Error, TEXT("MySQLInitConnection: Failed to Connect to Database!"));
+		UMySQLConnection::MySQLCloseConnection(cs);
+		return nullptr;
+	}
 
-		if (!mysql_real_connect(cs->globalCon,
-			HostString.c_str(),
-			UserNameString.c_str(),
-			UserPasswordString.c_str(),
-			DatabaseNameString.c_str(),
-			0, nullptr, 0))
-		{
-			UE_LOG(LogTemp, Error, TEXT("%s: Failed to Connect to Database!"), __FUNCTION__);
-			delete cs->globalCon;
-			cs->globalCon = nullptr;
-		}
-		else {
-			if (!mysql_set_character_set(cs->globalCon, "utf8"))
-			{
-				//printf("New client character set: %s\n",
-				//		mysql_character_set_name(con));
-
-			}
-			else {
-				GEngine->AddOnScreenDebugMessage(-1, 3, FColor::Cyan, TEXT("MySQLConnector: Can't set UTF-8 with mysql_set_character_set"));
-				UE_LOG(LogTemp, Error, TEXT("%s: Can't set UTF-8 with mysql_set_character_set"), __FUNCTION__);
-			}
-		}		
+	if (mysql_set_character_set(cs->globalCon, "utf8") != 0)
+	{
+		GEngine->AddOnScreenDebugMessage(-1, 3, FColor::Cyan, TEXT("MySQLConnector: Can't set UTF-8 with mysql_set_character_set"));
+		UE_LOG(LogTemp, Error, TEXT("MySQLInitConnection: Can't set UTF-8 with mysql_set_character_set"));
+		UMySQLConnection::MySQLCloseConnection(cs);
+		return nullptr;
 	}
 
 	return cs;
@@ -57,7 +58,6 @@ UMySQLConnection* UMySQLDatabase::MySQLInitConnection(FString Host, FString User
 
 bool UMySQLDatabase::MySQLConnectorExecuteQuery(FString Query, UMySQLConnection* Connection)
 {
-
 	/*	FString qwe = "";
 		qwe = qwe + TEXT("INSERT INTO `test`.`t1` (`Qwe`) VALUES ('");
 		qwe = qwe + Name;
@@ -73,11 +73,11 @@ bool UMySQLDatabase::MySQLConnectorExecuteQuery(FString Query, UMySQLConnection*
 	std::string MyStdString(TCHAR_TO_UTF8(*Query));
 
 	//if (mysql_query(con, "INSERT INTO `test`.`t1` (`Qwe`) VALUES ('Привет ');")) {
-	if (mysql_query(Connection->globalCon, MyStdString.c_str())) {
+	if (mysql_query(Connection->globalCon, MyStdString.c_str()))
+	{
 		return false;
 	}
 	return true;
-
 }
 
 bool UMySQLDatabase::DropTable(const FString TableName, UMySQLConnection* Connection)
@@ -95,7 +95,6 @@ bool UMySQLDatabase::DropTable(const FString TableName, UMySQLConnection* Connec
 	idxCrSts = MySQLConnectorExecuteQuery(Query, Connection);
 
 	return idxCrSts;
-
 }
 
 bool UMySQLDatabase::TruncateTable(const FString TableName, UMySQLConnection* Connection)
@@ -116,14 +115,12 @@ bool UMySQLDatabase::TruncateTable(const FString TableName, UMySQLConnection* Co
 	idxCrSts = MySQLConnectorExecuteQuery(Query, Connection);
 
 	return idxCrSts;
-
 }
 
 
 FMySQLConnectorTable UMySQLDatabase::CreateTable(const FString TableName,
-	const TArray<FMySQLConnectorTableField> Fields, UMySQLConnection* Connection)
+                                                 const TArray<FMySQLConnectorTableField> Fields, UMySQLConnection* Connection)
 {
-
 	/*CREATE TABLE `test`.`new_table` (
 		`id` INT NOT NULL AUTO_INCREMENT,
 		`q` VARCHAR(45) NOT NULL,
@@ -151,9 +148,11 @@ FMySQLConnectorTable UMySQLDatabase::CreateTable(const FString TableName,
 
 	for (const FMySQLConnectorTableField& field : Fields)
 	{
-		if (field.ResultStr != "") {
+		if (field.ResultStr != "")
+		{
 			query += field.ResultStr;
-			if (!field.ResultStr.EndsWith(TEXT(", "))) {
+			if (!field.ResultStr.EndsWith(TEXT(", ")))
+			{
 				query += ", ";
 			}
 		}
@@ -175,12 +174,10 @@ FMySQLConnectorTable UMySQLDatabase::CreateTable(const FString TableName,
 	t.Created = MySQLConnectorExecuteQuery(query, Connection);
 
 	return t;
-
 }
 
 FMySQLConnectorTableField UMySQLDatabase::MySQLConnectorINT(const FString FieldName, const bool PK, const bool AI)
 {
-
 	/*CREATE TABLE `test`.`new_tabled` (
 		`id` INT NOT NULL AUTO_INCREMENT,
 		PRIMARY KEY(`id`),
@@ -192,11 +189,13 @@ FMySQLConnectorTableField UMySQLDatabase::MySQLConnectorINT(const FString FieldN
 	f.FieldName = FieldName;
 
 	FString outStr = "`" + FieldName + "` INT ";
-	if (AI) {
+	if (AI)
+	{
 		outStr += "  NOT NULL AUTO_INCREMENT, ";
 	}
 
-	if (PK) {
+	if (PK)
+	{
 		outStr += "  PRIMARY KEY(`" + FieldName + "`) ";
 	}
 
@@ -206,7 +205,7 @@ FMySQLConnectorTableField UMySQLDatabase::MySQLConnectorINT(const FString FieldN
 }
 
 FMySQLConnectorTableField UMySQLDatabase::MySQLConnectorVARCHAR(const FString FieldName, const FString FieldLength,
-	const bool PK, const bool Unique, const bool NotNull)
+                                                                const bool PK, const bool Unique, const bool NotNull)
 {
 	/*
 	CREATE TABLE `test`.`new_table` (
@@ -223,18 +222,22 @@ FMySQLConnectorTableField UMySQLDatabase::MySQLConnectorVARCHAR(const FString Fi
 
 	FString outStr = "";
 
-	if (NotNull) {
+	if (NotNull)
+	{
 		outStr = " `" + FieldName + "` " + "VARCHAR(" + FieldLength + ") NOT NULL, ";
 	}
-	else {
+	else
+	{
 		outStr = " `" + FieldName + "` " + "VARCHAR(" + FieldLength + "), ";
 	}
 
-	if (PK) {
+	if (PK)
+	{
 		outStr += "  PRIMARY KEY(`" + FieldName + "`), ";
 	}
 
-	if (Unique) {
+	if (Unique)
+	{
 		outStr += "  UNIQUE INDEX `" + FieldName + "_UNIQUE` (`" + FieldName + "` ASC), ";
 	}
 
@@ -245,7 +248,8 @@ FMySQLConnectorTableField UMySQLDatabase::MySQLConnectorVARCHAR(const FString Fi
 	return f;
 }
 
-bool UMySQLDatabase::MySQLConnectorInsertTest(const FString Query, UMySQLConnection* Connection) {
+bool UMySQLDatabase::MySQLConnectorInsertTest(const FString Query, UMySQLConnection* Connection)
+{
 	RunQueryAndGetResults(Query, Connection);
 	//	RunQueryAndGetResults(TEXT("select id, FName from t2"), Connection);
 	return true;
@@ -283,7 +287,7 @@ MySQLConnectorQueryResult UMySQLDatabase::RunQueryAndGetResults(FString Query, U
 		//finish_with_error(con);
 	}
 
-	MYSQL_RES *result = mysql_store_result(Connection->globalCon);
+	MYSQL_RES* result = mysql_store_result(Connection->globalCon);
 
 	if (!result)
 	{
@@ -299,9 +303,10 @@ MySQLConnectorQueryResult UMySQLDatabase::RunQueryAndGetResults(FString Query, U
 	TArray<int> fieldTypes;
 	TArray<FString> fieldNames;
 
-	MYSQL_FIELD *fields;
+	MYSQL_FIELD* fields;
 	fields = mysql_fetch_fields(result);
-	if (fields) {
+	if (fields)
+	{
 		for (int i = 0; i < num_fields; i++)
 		{
 			FString NewString = FString::FromInt(fields[i].type);
@@ -321,7 +326,6 @@ MySQLConnectorQueryResult UMySQLDatabase::RunQueryAndGetResults(FString Query, U
 	MYSQL_ROW row;
 	while ((row = mysql_fetch_row(result)))
 	{
-
 		MySQLConnectorResultValue rowVal;
 
 		for (int i = 0; i < num_fields; i++)
@@ -333,7 +337,8 @@ MySQLConnectorQueryResult UMySQLDatabase::RunQueryAndGetResults(FString Query, U
 
 			FString fieldValueStr = (UTF8_TO_TCHAR(row[i]));
 
-			switch (fieldTypes[i]) {
+			switch (fieldTypes[i])
+			{
 			case enum_field_types::MYSQL_TYPE_LONG:
 				//GEngine->AddOnScreenDebugMessage(-1, 3, FColor::Cyan, TEXT("MySQLConnector: Type is: MYSQL_TYPE_LONG "));
 				//GEngine->AddOnScreenDebugMessage(-1, 3, FColor::Cyan, TEXT("VALUE is '") + fieldValueStr + TEXT("' "));
@@ -365,7 +370,6 @@ MySQLConnectorQueryResult UMySQLDatabase::RunQueryAndGetResults(FString Query, U
 	resultOutput.Results = resultRows;
 	resultOutput.Success = true;
 	return resultOutput;
-
 }
 
 FMySQLConnectoreQueryResult UMySQLDatabase::MySQLConnectorGetData(const FString& Query, UMySQLConnection* Connection)
@@ -403,5 +407,4 @@ FMySQLConnectoreQueryResult UMySQLDatabase::MySQLConnectorGetData(const FString&
 
 
 	return result;
-
 }
