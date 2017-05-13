@@ -24,7 +24,6 @@ bool UMySQLConnection::MySQLCloseConnection(UMySQLConnection* Connection)
 			mysql_close(Connection->globalCon);
 			Connection->globalCon = nullptr;
 			mysql_library_end();
-			UE_LOG(LogTemp, Log, TEXT("MySQLCloseConnection: Connection to DB closed in %s."));
 			return true;
 		}else
 		{
