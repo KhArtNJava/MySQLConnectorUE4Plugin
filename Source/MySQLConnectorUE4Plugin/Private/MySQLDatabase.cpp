@@ -255,6 +255,23 @@ bool UMySQLDatabase::MySQLConnectorInsertTest(const FString Query, UMySQLConnect
 	return true;
 }
 
+bool UMySQLDatabase::MySQLConnectorGetPlayerControllerIP(FString& IP, int32& IP_int, APlayerController* PlayerController)
+{
+	if (PlayerController)
+	{
+		UNetConnection* connection = PlayerController->GetNetConnection();
+		if (connection)
+		{
+			IP = connection->LowLevelGetRemoteAddress(false);
+			IP_int = connection->GetAddrAsInt();
+			return true;
+		}
+	}
+	IP = "";
+	IP_int = -1;
+	return false;
+}
+
 #pragma warning(push)
 #pragma warning( disable : 4706 )
 MySQLConnectorQueryResult UMySQLDatabase::RunQueryAndGetResults(FString Query, UMySQLConnection* Connection)

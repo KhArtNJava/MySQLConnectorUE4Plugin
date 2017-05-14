@@ -4,8 +4,9 @@
 #include  "MySQLConnection.h"
 #include  "MySQLConnectorStructs.h"
 #include  "Kismet/BlueprintFunctionLibrary.h"
-
+#include "Engine.h"
 #include "MySQLDatabase.generated.h"
+
 
 USTRUCT(BlueprintType)
 struct MYSQLCONNECTORUE4PLUGIN_API FMySQLConnectorConnectionStruct
@@ -152,6 +153,10 @@ public:
 
 	UFUNCTION(BlueprintCallable, meta = (DisplayName = "InsertTest"), Category = "MySQLConnector|Query")
 		static bool MySQLConnectorInsertTest(const FString Query, UMySQLConnection* Connection);
+
+	/** returns the address or empty String on error, returns address as Integer or -1 on error */
+	UFUNCTION(BlueprintCallable, meta = (DisplayName = "Get Controller IP-Address"), Category = "MySQLConnector|Connection")
+	static bool MySQLConnectorGetPlayerControllerIP(FString& IP, int32& IP_int, APlayerController* PlayerController);
 
 	/** Get data from the database using a select statement and return the rows. */
 	UFUNCTION(BlueprintCallable, Category = "MySQLConnector|Query", meta = (DisplayName = "Get Data From Table(s) (manual query)"))
