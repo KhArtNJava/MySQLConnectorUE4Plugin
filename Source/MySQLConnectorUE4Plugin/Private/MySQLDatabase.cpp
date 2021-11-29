@@ -263,7 +263,7 @@ bool UMySQLDatabase::MySQLConnectorGetPlayerControllerIP(FString& IP, int32& IP_
 		if (connection)
 		{
 			IP = connection->LowLevelGetRemoteAddress(false);
-			IP_int = connection->GetAddrAsInt();
+			IP_int = connection->GetAddrPort();
 			return true;
 		}
 	}
